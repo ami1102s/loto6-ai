@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}AI予想 | ロト6 予想分析AI{% endblock %}
+{% block title %}統計予想 | ロト6 予想分析AI{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold text-gray-800 mb-2">🤖 AI予想番号生成</h1>
-<p class="text-gray-500 text-sm mb-6">過去データをClaude AIが分析して予想番号を提案します</p>
+<h1 class="text-2xl font-bold text-gray-800 mb-2">🎱 統計予想番号生成</h1>
+<p class="text-gray-500 text-sm mb-6">過去データの統計分析をもとに予想番号を生成します（外部API不使用）</p>
 
 <!-- 設定フォーム -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -66,11 +66,6 @@
 {% if error %}
 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
   <p class="text-red-600 text-sm">{{ error }}</p>
-  {% if 'ANTHROPIC_API_KEY' in error %}
-  <p class="text-red-400 text-xs mt-1">
-    ターミナルで <code class="bg-red-100 px-1 rounded">set ANTHROPIC_API_KEY=sk-ant-...</code> を実行してから再起動してください。
-  </p>
-  {% endif %}
 </div>
 {% endif %}
 
@@ -78,7 +73,7 @@
 {% if result %}
 <div class="space-y-4">
   <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-    <h3 class="text-sm font-bold text-indigo-800 mb-1">📋 AIの分析コメント</h3>
+    <h3 class="text-sm font-bold text-indigo-800 mb-1">📋 統計分析サマリー</h3>
     <p class="text-sm text-indigo-700">{{ result.analysis_summary }}</p>
   </div>
 

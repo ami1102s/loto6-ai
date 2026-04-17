@@ -1,4 +1,5 @@
 """ロト6分析ロジック"""
+import random
 from typing import Any
 
 
@@ -135,3 +136,145 @@ def calc_simulation(draws: list[dict], input_numbers: list[int]) -> dict[str, An
         "results": prize_counts,
         "details": details[:50],
     }
+
+
+def calc_prediction(draws: list[dict], sets: int = 3, style: str = "balanced") -> dict[str, Any]:
+    """
+    統計データに基づいて予想番号を生成する（外部API不使用）
+
+    style:
+      "balanced" - 出現頻度の中央付近を重視（バランス型）
+      "hot"      - 出現頻度の高い番号を重視
+      "cold"     - しばらく出ていない番号（不在回数が多い）を重視
+    """
+    if not draws:
+        return {"predictions": [], "analysis_summary": "データがありません"}
+
+    freq = calc_frequency(draws)
+    total = len(draws)
+
+    # 各番号のスコアを計算
+    counts = [f["count"] for f in freq]
+    max_count = max(counts) or 1
+    min_count = min(counts) or 1
+    max_absent = max(f["last_seen"] for f in freq) or 1
+
+    weights: list[float] = []
+    for f in freq:
+        if style == "hot":
+            # 出現回数が多いほど高スコア
+            w = (f["count"] / max_count) ** 2 + 0.1
+        elif style == "cold":
+            # 不在回数が多いほど高スコア（長く出ていない番号を優先）
+            w = (f["last_seen"] / max_absent) ** 2 + 0.1
+        else:  # balanced
+            # 出現頻度が平均に近いほど高スコア（極端な偏りを避ける）
+            avg = total * 6 / 43
+            deviation = abs(f["count"] - avg) / (max_count - min_count + 1)
+            w = (1 - deviation) + 0.2
+        weights.append(max(w, 0.01))
+
+    numbers_pool = [f["number"] for f in freq]  # 1〜43
+
+    # 統計サマリーを生成
+    sorted_by_freq = sorted(freq, key=lambda x: -x["count"])
+    hot_top3 = [n["number"] for n in sorted_by_freq[:3]]
+    cold_top3 = [n["number"] for n in sorted_by_freq[-3:]]
+    avg_count = round(total * 6 / 43, 1)
+    summary = (
+        f"直近{total}回の分析: "
+        f"ホット上位3({hot_top3})、"
+        f"コールド下位3({cold_top3})、"
+        f"平均出現{avg_count}回"
+    )
+
+    predictions = []
+    used_sets: list[set] = []  # 重複セットを避けるために記録
+
+    attempt = 0
+    while len(predictions) < sets and attempt < sets * 20:
+        attempt += 1
+
+        # 重み付きランダムサンプリングで6個選ぶ
+        chosen = weighted_sample(numbers_pool, weights, 6)
+        if chosen is None:
+            continue
+        chosen_set = frozenset(chosen)
+
+        # 同じセットが既に出ていたらスキップ
+        if chosen_set in [frozenset(s) for s in used_sets]:
+            continue
+
+        sorted_chosen = sorted(chosen)
+
+        # ボーナス数字（選ばれた6個以外からランダム）
+        remaining = [n for n in numbers_pool if n not in chosen_set]
+        remaining_weights = [weights[n - 1] for n in remaining]
+        bonus_list = weighted_sample(remaining, remaining_weights, 1)
+        bonus = bonus_list[0] if bonus_list else random.choice(remaining)
+
+        # 選択理由を生成
+        reason = _make_reason(sorted_chosen, freq, style, total)
+
+        predictions.append({
+            "numbers": sorted_chosen,
+            "bonus": bonus,
+            "reason": reason,
+        })
+        used_sets.append(sorted_chosen)
+
+    return {
+        "predictions": predictions,
+        "analysis_summary": summary,
+    }
+
+
+def weighted_sample(population: list, weights: list[float], k: int) -> list | None:
+    """重み付きランダムサンプリング（重複なし）"""
+    if k > len(population):
+        return None
+    pool = list(zip(population, weights))
+    result = []
+    for _ in range(k):
+        if not pool:
+            break
+        total_w = sum(w for _, w in pool)
+        r = random.uniform(0, total_w)
+        cumulative = 0.0
+        for i, (item, w) in enumerate(pool):
+            cumulative += w
+            if r <= cumulative:
+                result.append(item)
+                pool.pop(i)
+                break
+    return result if len(result) == k else None
+
+
+def _make_reason(numbers: list[int], freq: list[dict], style: str, total: int) -> str:
+    """選択番号の統計的な特徴を簡潔に説明する"""
+    freq_map = {f["number"]: f for f in freq}
+    counts = [freq_map[n]["count"] for n in numbers]
+    avg_count = round(total * 6 / 43, 1)
+    chosen_avg = round(sum(counts) / len(counts), 1)
+
+    odd_count = sum(1 for n in numbers if n % 2 != 0)
+    total_sum = sum(numbers)
+
+    # 連番チェック
+    pairs = sum(1 for i in range(len(numbers) - 1) if numbers[i + 1] - numbers[i] == 1)
+
+    parts = []
+    if style == "hot":
+        parts.append(f"高頻度番号中心（平均{chosen_avg}回）")
+    elif style == "cold":
+        absent_avg = round(sum(freq_map[n]["last_seen"] for n in numbers) / len(numbers), 1)
+        parts.append(f"平均{absent_avg}回不在の番号を選択")
+    else:
+        parts.append(f"出現頻度バランス型（平均{chosen_avg}回）")
+
+    parts.append(f"奇{odd_count}偶{6 - odd_count}")
+    parts.append(f"合計{total_sum}")
+    if pairs > 0:
+        parts.append(f"連番{pairs}ペア含む")
+
+    return " / ".join(parts)
