@@ -1,8 +1,9 @@
-node_modules/
-dist/
-.wrangler/
-*.local
+__pycache__/
+*.pyc
+*.pyo
+instance/
+data/*.sql
+data/*.csv
 .env
-.env.*
-!.env.example
-data/import.sql
+.venv/
+venv/

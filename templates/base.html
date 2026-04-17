@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ロト6 予想分析AI{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="bg-indigo-700 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="flex items-center justify-between h-14">
+        <a href="/" class="text-lg font-bold hover:opacity-80">🎱 ロト6 予想分析AI</a>
+        <nav class="hidden md:flex gap-1 text-sm">
+          <a href="/" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/' %}bg-white text-indigo-700{% endif %}">ホーム</a>
+          <a href="/frequency" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/frequency' %}bg-white text-indigo-700{% endif %}">頻度分析</a>
+          <a href="/patterns" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/patterns' %}bg-white text-indigo-700{% endif %}">パターン</a>
+          <a href="/predict" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/predict' %}bg-white text-indigo-700{% endif %}">AI予想</a>
+          <a href="/simulation" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/simulation' %}bg-white text-indigo-700{% endif %}">シミュレーション</a>
+          <a href="/draws" class="px-3 py-1.5 rounded hover:bg-indigo-600 {% if request.path == '/draws' %}bg-white text-indigo-700{% endif %}">過去結果</a>
+        </nav>
+      </div>
+      <!-- モバイルナビ -->
+      <nav class="md:hidden flex gap-1 pb-2 overflow-x-auto text-xs">
+        <a href="/" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/' %}bg-white text-indigo-700{% endif %}">ホーム</a>
+        <a href="/frequency" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/frequency' %}bg-white text-indigo-700{% endif %}">頻度分析</a>
+        <a href="/patterns" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/patterns' %}bg-white text-indigo-700{% endif %}">パターン</a>
+        <a href="/predict" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/predict' %}bg-white text-indigo-700{% endif %}">AI予想</a>
+        <a href="/simulation" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/simulation' %}bg-white text-indigo-700{% endif %}">シミュレーション</a>
+        <a href="/draws" class="flex-shrink-0 px-3 py-1 rounded hover:bg-indigo-600 {% if request.path == '/draws' %}bg-white text-indigo-700{% endif %}">過去結果</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-gray-400 text-xs py-4 mt-8">
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      <p>ロト6 予想分析AI &mdash; 当選を保証するものではありません。宝くじは適度に楽しみましょう。</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}シミュレーション | ロト6 予想分析AI{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-2">🎯 当選シミュレーション</h1>
+<p class="text-gray-500 text-sm mb-6">6個の番号を入力して、過去の抽選でどれだけ当たっていたか確認します</p>
+
+<!-- 入力フォーム -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+  <form method="POST" action="/simulation">
+    <div class="mb-4">
+      <label class="block text-sm font-bold text-gray-700 mb-2">
+        番号を6個入力（カンマ区切り）
+      </label>
+      <input type="text" name="numbers"
+        value="{{ input_numbers }}"
+        placeholder="例: 3,12,22,31,38,43"
+        class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        required>
+      <p class="text-xs text-gray-400 mt-1">1〜43の範囲で重複なし6個</p>
+    </div>
+
+    <!-- 番号グリッドで選択 -->
+    <div class="mb-4">
+      <p class="text-xs text-gray-500 mb-2">またはグリッドから選択してクリックで入力欄に反映：</p>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1" id="numGrid">
+        {% for n in range(1, 44) %}
+        <button type="button" onclick="toggleNum({{ n }})"
+          id="btn{{ n }}"
+          class="w-9 h-9 rounded-full text-xs font-bold text-white shadow transition-transform hover:scale-110
+          {% if n <= 9 %}bg-red-400{% elif n <= 18 %}bg-orange-400{% elif n <= 27 %}bg-yellow-400{% elif n <= 36 %}bg-green-400{% else %}bg-blue-400{% endif %}
+          opacity-70">{{ n }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+      <p class="text-red-600 text-sm">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <button type="submit"
+      class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors">
+      🎯 シミュレーション実行
+    </button>
+  </form>
+</div>
+
+<!-- 結果 -->
+{% if result %}
+<div class="space-y-4">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <h3 class="font-bold text-gray-800 mb-4">過去 {{ result.total }}回 の結果</h3>
+
+    {% set prize_labels = {
+      '1st': '1等（6個一致）',
+      '2nd': '2等（5個+ボーナス）',
+      '3rd': '3等（5個一致）',
+      '4th': '4等（4個一致）',
+      '5th': '5等（3個一致）',
+      'no_prize': '落選'
+    } %}
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      {% for key, label in prize_labels.items() %}
+      {% set count = result.results[key] %}
+      <div class="rounded-lg p-3 {% if count > 0 and key != 'no_prize' %}bg-yellow-50 border border-yellow-200{% else %}bg-gray-50{% endif %}">
+        <div class="text-xs text-gray-500 mb-1">{{ label }}</div>
+        <div class="text-2xl font-bold {% if count > 0 and key != 'no_prize' %}text-yellow-600{% else %}text-gray-700{% endif %}">{{ count }}回</div>
+        <div class="text-xs text-gray-400">
+          {% if result.total > 0 %}{{ "%.2f"|format(count / result.total * 100) }}%{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if result.details %}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <h3 class="font-bold text-gray-800 mb-4">3個以上一致した回（{{ result.details|length }}件）</h3>
+    <div class="space-y-2">
+      {% for d in result.details %}
+      <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-sm flex-wrap">
+        <div class="w-16 text-right text-xs text-gray-500">第{{ d.draw_number }}回</div>
+        <div class="w-24 text-xs text-gray-400">{{ d.draw_date }}</div>
+        <div class="flex gap-1">
+          {% for n in d.matched_numbers %}
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white ring-2 ring-red-400 ring-offset-1 shadow
+            {% if n <= 9 %}bg-red-400{% elif n <= 18 %}bg-orange-400{% elif n <= 27 %}bg-yellow-400{% elif n <= 36 %}bg-green-400{% else %}bg-blue-400{% endif %}">{{ n }}</span>
+          {% endfor %}
+        </div>
+        {% if d.bonus_matched %}<span class="text-xs text-purple-600">+ボーナス</span>{% endif %}
+        <span class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full
+          {% if d.prize_rank == '落選' %}bg-gray-100 text-gray-500{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+          {{ d.prize_rank }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+let selected = new Set({{ result.input | tojson if result else '[]' }});
+
+function updateInput() {
+  const sorted = Array.from(selected).sort((a,b) => a-b);
+  document.querySelector('input[name="numbers"]').value = sorted.join(',');
+  for (let i = 1; i <= 43; i++) {
+    const btn = document.getElementById('btn' + i);
+    if (selected.has(i)) {
+      btn.classList.remove('opacity-70');
+      btn.classList.add('opacity-100', 'ring-2', 'ring-white', 'ring-offset-1');
+    } else {
+      btn.classList.add('opacity-70');
+      btn.classList.remove('opacity-100', 'ring-2', 'ring-white', 'ring-offset-1');
+      if (selected.size >= 6) btn.classList.add('opacity-30');
+    }
+  }
+}
+
+function toggleNum(n) {
+  if (selected.has(n)) {
+    selected.delete(n);
+  } else if (selected.size < 6) {
+    selected.add(n);
+  }
+  updateInput();
+}
+
+updateInput();
+</script>
+{% endblock %}

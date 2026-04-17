@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}ホーム | ロト6 予想分析AI{% endblock %}
+
+{% block content %}
+<div class="text-center mb-10">
+  <h1 class="text-3xl font-bold text-gray-800 mb-3">🎱 ロト6 予想分析AI</h1>
+  <p class="text-gray-500">過去の抽選データをAIが分析して予想番号を提案します</p>
+  {% if total > 0 %}
+  <p class="text-sm text-indigo-600 mt-1">データ: {{ total }}回分</p>
+  {% endif %}
+</div>
+
+<!-- ナビゲーションカード -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+  <a href="/frequency" class="block bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+    <div class="text-3xl mb-2">📊</div>
+    <div class="font-bold text-gray-800 text-sm">頻度分析</div>
+    <div class="text-xs text-gray-500 mt-1">各番号の出現頻度</div>
+  </a>
+  <a href="/patterns" class="block bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+    <div class="text-3xl mb-2">🔍</div>
+    <div class="font-bold text-gray-800 text-sm">パターン分析</div>
+    <div class="text-xs text-gray-500 mt-1">奇偶・連番・合計値</div>
+  </a>
+  <a href="/predict" class="block bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+    <div class="text-3xl mb-2">🤖</div>
+    <div class="font-bold text-gray-800 text-sm">AI予想</div>
+    <div class="text-xs text-gray-500 mt-1">Claude AIが番号を提案</div>
+  </a>
+  <a href="/simulation" class="block bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+    <div class="text-3xl mb-2">🎯</div>
+    <div class="font-bold text-gray-800 text-sm">シミュレーション</div>
+    <div class="text-xs text-gray-500 mt-1">番号の過去当選確認</div>
+  </a>
+</div>
+
+<!-- 最新抽選結果 -->
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-bold text-gray-800">最新の抽選結果</h2>
+    <a href="/draws" class="text-sm text-indigo-600 hover:underline">全件見る →</a>
+  </div>
+
+  {% if draws %}
+    {% for d in draws %}
+    {% include "_draw_row.html" %}
+    {% endfor %}
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <p class="text-lg mb-2">データがありません</p>
+    <p class="text-sm">みずほ銀行からCSVをダウンロードしてインポートしてください</p>
+    <code class="block mt-3 text-xs bg-gray-100 rounded p-2 text-left max-w-md mx-auto">
+      python scripts/import_csv.py data/loto6.csv
+    </code>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
