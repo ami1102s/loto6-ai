@@ -1,0 +1,34 @@
+{% macro ball(n, is_bonus=false) %}
+  {% if n <= 9 %}{% set color = "bg-red-400" %}
+  {% elif n <= 18 %}{% set color = "bg-orange-400" %}
+  {% elif n <= 27 %}{% set color = "bg-yellow-400" %}
+  {% elif n <= 36 %}{% set color = "bg-green-400" %}
+  {% else %}{% set color = "bg-blue-400" %}
+  {% endif %}
+  {% if is_bonus %}
+  <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold border-2
+    {% if n <= 9 %}border-red-400 text-red-400
+    {% elif n <= 18 %}border-orange-400 text-orange-400
+    {% elif n <= 27 %}border-yellow-400 text-yellow-400
+    {% elif n <= 36 %}border-green-400 text-green-400
+    {% else %}border-blue-400 text-blue-400{% endif %}
+    bg-white">{{ n }}</span>
+  {% else %}
+  <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold text-white shadow {{ color }}">{{ n }}</span>
+  {% endif %}
+{% endmacro %}
+
+<div class="flex items-center gap-2 p-3 border-b border-gray-100 hover:bg-gray-50 flex-wrap">
+  <div class="w-16 text-right text-sm">
+    <span class="text-gray-400 text-xs">第</span><span class="font-bold text-gray-800">{{ d.draw_number }}</span><span class="text-gray-400 text-xs">回</span>
+  </div>
+  <div class="w-24 text-xs text-gray-400">{{ d.draw_date }}</div>
+  <div class="flex gap-1">
+    {{ ball(d.n1) }}{{ ball(d.n2) }}{{ ball(d.n3) }}{{ ball(d.n4) }}{{ ball(d.n5) }}{{ ball(d.n6) }}
+  </div>
+  <span class="text-gray-300 text-xs">B</span>
+  {{ ball(d.bonus, is_bonus=true) }}
+  {% if d.prize1_amount %}
+  <div class="ml-auto text-xs text-gray-400">1等: {{ d.prize1_winners }}名 / {{ "%.2f"|format(d.prize1_amount / 100000000) }}億円</div>
+  {% endif %}
+</div>

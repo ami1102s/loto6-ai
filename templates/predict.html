@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}AI予想 | ロト6 予想分析AI{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-2">🤖 AI予想番号生成</h1>
+<p class="text-gray-500 text-sm mb-6">過去データをClaude AIが分析して予想番号を提案します</p>
+
+<!-- 設定フォーム -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+  <form method="POST" action="/predict">
+
+    <!-- スタイル選択 -->
+    <div class="mb-6">
+      <h3 class="text-sm font-bold text-gray-700 mb-3">予想スタイル</h3>
+      <div class="grid grid-cols-3 gap-3">
+        <label class="cursor-pointer">
+          <input type="radio" name="style" value="balanced" class="sr-only" checked>
+          <div class="p-3 rounded-lg border-2 border-indigo-500 bg-indigo-50 style-card" data-value="balanced">
+            <div class="text-xl mb-1">⚖️</div>
+            <div class="text-sm font-bold text-gray-800">バランス型</div>
+            <div class="text-xs text-gray-500 mt-0.5">ホットとコールドをバランス良く</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="style" value="hot" class="sr-only">
+          <div class="p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 style-card" data-value="hot">
+            <div class="text-xl mb-1">🔥</div>
+            <div class="text-sm font-bold text-gray-800">ホット重視</div>
+            <div class="text-xs text-gray-500 mt-0.5">よく出る番号を優先</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="style" value="cold" class="sr-only">
+          <div class="p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 style-card" data-value="cold">
+            <div class="text-xl mb-1">❄️</div>
+            <div class="text-sm font-bold text-gray-800">コールド重視</div>
+            <div class="text-xs text-gray-500 mt-0.5">しばらく出ていない番号を優先</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- セット数 -->
+    <div class="mb-6">
+      <h3 class="text-sm font-bold text-gray-700 mb-3">生成セット数</h3>
+      <div class="flex gap-2">
+        {% for n in [1, 2, 3, 4, 5] %}
+        <label class="cursor-pointer">
+          <input type="radio" name="sets" value="{{ n }}" class="sr-only" {% if n == 3 %}checked{% endif %}>
+          <div class="w-10 h-10 rounded-lg text-sm font-bold flex items-center justify-center transition-colors
+            {% if n == 3 %}bg-indigo-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}
+            sets-btn">{{ n }}</div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button type="submit"
+      class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors">
+      🤖 AI予想を生成する
+    </button>
+  </form>
+</div>
+
+<!-- エラー -->
+{% if error %}
+<div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+  <p class="text-red-600 text-sm">{{ error }}</p>
+  {% if 'ANTHROPIC_API_KEY' in error %}
+  <p class="text-red-400 text-xs mt-1">
+    ターミナルで <code class="bg-red-100 px-1 rounded">set ANTHROPIC_API_KEY=sk-ant-...</code> を実行してから再起動してください。
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- AI予想結果 -->
+{% if result %}
+<div class="space-y-4">
+  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+    <h3 class="text-sm font-bold text-indigo-800 mb-1">📋 AIの分析コメント</h3>
+    <p class="text-sm text-indigo-700">{{ result.analysis_summary }}</p>
+  </div>
+
+  {% for p in result.predictions %}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <h3 class="font-bold text-gray-800 mb-3">セット {{ loop.index }}</h3>
+    <div class="flex items-center gap-2 mb-3 flex-wrap">
+      {% for n in p.numbers %}
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-full text-base font-bold text-white shadow
+        {% if n <= 9 %}bg-red-400{% elif n <= 18 %}bg-orange-400{% elif n <= 27 %}bg-yellow-400{% elif n <= 36 %}bg-green-400{% else %}bg-blue-400{% endif %}">
+        {{ n }}
+      </span>
+      {% endfor %}
+      <span class="text-gray-300 mx-1 text-lg">+</span>
+      {% set b = p.bonus %}
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-full text-base font-bold border-2
+        {% if b <= 9 %}border-red-400 text-red-400{% elif b <= 18 %}border-orange-400 text-orange-400{% elif b <= 27 %}border-yellow-400 text-yellow-400{% elif b <= 36 %}border-green-400 text-green-400{% else %}border-blue-400 text-blue-400{% endif %}
+        bg-white">{{ b }}</span>
+      <span class="text-xs text-gray-400">(ボーナス)</span>
+    </div>
+    <p class="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">{{ p.reason }}</p>
+  </div>
+  {% endfor %}
+
+  <p class="text-xs text-gray-400 text-center">※ AI予想は統計的分析に基づくものであり、当選を保証するものではありません</p>
+</div>
+{% endif %}
+
+<script>
+// スタイルカードのラジオ選択をビジュアルに反映
+document.querySelectorAll('input[name="style"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.style-card').forEach(card => {
+      card.classList.remove('border-indigo-500', 'bg-indigo-50');
+      card.classList.add('border-gray-200');
+    });
+    radio.nextElementSibling.classList.remove('border-gray-200');
+    radio.nextElementSibling.classList.add('border-indigo-500', 'bg-indigo-50');
+  });
+});
+// セット数ボタンのビジュアル反映
+document.querySelectorAll('input[name="sets"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.sets-btn').forEach(btn => {
+      btn.classList.remove('bg-indigo-600', 'text-white');
+      btn.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    radio.nextElementSibling.classList.remove('bg-gray-100', 'text-gray-700');
+    radio.nextElementSibling.classList.add('bg-indigo-600', 'text-white');
+  });
+});
+</script>
+{% endblock %}
